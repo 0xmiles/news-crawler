@@ -1,167 +1,36 @@
-# News Crawler Configuration
-
-# AI Configuration
 ai:
-  provider: "${AI_PROVIDER}" # or "openai"
-  model: "${AI_MODEL}"
+  provider: "anthropic"
+  model: "claude-sonnet-4-5-20250929"
   api_key: "${ANTHROPIC_API_KEY}"
   max_tokens: 4000
   temperature: 0.7
 
-# Database Configuration (Optional - only needed for local storage)
-database:
-  url: "sqlite:///crawler.db"
-  echo: false
-  pool_size: 5
-  max_overflow: 10
+search:
+  provider: "google"  # or "bing"
+  api_key: "${GOOGLE_SEARCH_API_KEY}"
+  search_engine_id: "${GOOGLE_SEARCH_ENGINE_ID}"
+  max_results: 10
 
-# Crawler Configuration
-crawler:
-  user_agent: "NewsCrawler/1.0.0"
-  request_delay: 1.0
-  max_concurrent_requests: 5
-  timeout: 30
-  retry_attempts: 3
-  respect_robots_txt: true
+blog_agents:
+  max_search_results: 3
+  target_blog_length: 1500
+  output_dir: "outputs"
+  reference_file: "references/reference.md"
+  max_retries: 3
+  timeout: 120
 
-# YouTube Configuration
-youtube:
-  api_key: "${YOUTUBE_API_KEY}"
-  max_video_length: 3600
-  transcript_language: "en"
-
-# Storage Configuration
-storage:
-  path: "./data"
-  max_content_length: 1000000
-  compression: true
-
-# Logging Configuration
-logging:
-  level: "INFO"
-  file: null
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
-# Notion Integration
-notion:
-  api_key: "${NOTION_API_KEY}"
-
-# Content Filters
-filters:
-  keywords:
+  # Agent-specific settings
+  post_searcher:
     enabled: true
-    required:
-      - "백엔드"
-      - "서버"
-      - "API"
-      - "데이터베이스"
-      - "backend"
-      - "server"
-      - "database"
-      - "Spring"
-      - "Spring Boot"
-      - "Spring Data JPA"
-      - "Spring Security"
-      - "Spring Cloud"
-      - "Spring Batch"
-      - "Spring Data MongoDB"
-      - "Spring Data Redis"
-      - "Spring Data Elasticsearch"
-      - "Spring Data REST"
+    max_articles: 3
+    min_content_length: 500
 
-    excluded:
-      - "프론트엔드"
-      - "UI"
-      - "UX"
-      - "frontend"
-      - "ui"
-      - "ux"
-    case_sensitive: false
-    match_all_required: false
-
-  categories:
+  blog_planner:
     enabled: true
-    allowed:
-      - "backend"
-      - "database"
-      - "api"
-      - "devops"
-    excluded:
-      - "frontend"
-      - "design"
-    category_keywords:
-      backend:
-        - "백엔드"
-        - "서버"
-        - "API"
-        - "backend"
-        - "server"
-        - "api"
-      database:
-        - "데이터베이스"
-        - "database"
-        - "mysql"
-        - "postgresql"
-        - "mongodb"
-      api:
-        - "API"
-        - "api"
-        - "rest"
-        - "graphql"
-        - "grpc"
-      devops:
-        - "devops"
-        - "docker"
-        - "kubernetes"
-        - "aws"
-        - "azure"
+    min_sections: 3
+    max_sections: 7
 
-  length:
+  blog_writer:
     enabled: true
-    min_length: 100
-    max_length: 100000
-    min_title_length: 10
-    max_title_length: 200
-
-  quality:
-    enabled: true
-    min_word_count: 50
-    max_word_count: 5000
-    min_sentence_count: 3
-    require_proper_sentences: true
-    min_paragraph_count: 1
-
-# Pattern-based crawling
-pattern:
-  max_pages: 10
-  patterns:
-    - type: "numeric_range"
-      start: 1
-      end: 50
-      template: "{base_url}/{number}"
-    - type: "list"
-      values: ["backend", "api", "database", "server"]
-      template: "{base_url}/{value}"
-
-# Dev blogs to crawl
-dev_blogs:
-  - url: "https://"
-    schedule: "0 9 * * *"
-    selectors:
-      title: "h1"
-      content: ".content"
-      author: ".author"
-      date: ".date"
-    enabled: true
-
-# YouTube channels to crawl
-youtube_channels:
-  - url: "https://youtube.com/@channel"
-    schedule: "0 12 * * *"
-    enabled: true
-
-# YouTube videos to crawl
-youtube_videos:
-  - url: "https://youtube.com/watch?v=VIDEO_ID"
-    schedule: "0 18 * * *"
-    enabled: true
+    section_word_target: 300
+    apply_tone_analysis: true

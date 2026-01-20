@@ -1,69 +1,95 @@
 #!/bin/bash
 
-# News Crawler Setup Script
-echo "🚀 Setting up News Crawler..."
+# Blog Agents Setup Script
+# This script helps set up the Blog Agents environment
 
-# Check if Python 3.8+ is installed
-python_version=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
-required_version="3.8"
+set -e  # Exit on error
+
+echo "================================"
+echo "Blog Agents - Setup Script"
+echo "================================"
+echo ""
+
+# Check Python version
+echo "Checking Python version..."
+python_version=$(python3 --version 2>&1 | awk '{print $2}')
+required_version="3.9"
 
 if [ "$(printf '%s\n' "$required_version" "$python_version" | sort -V | head -n1)" != "$required_version" ]; then
-    echo "❌ Python 3.8+ is required. Current version: $python_version"
+    echo "Error: Python 3.9 or higher is required"
+    echo "Current version: $python_version"
     exit 1
 fi
 
-echo "✅ Python version check passed: $python_version"
+echo "✓ Python version: $python_version"
+echo ""
 
 # Create virtual environment
-echo "📦 Creating virtual environment..."
-python3 -m venv venv
+echo "Creating virtual environment..."
+if [ -d "venv" ]; then
+    echo "Virtual environment already exists. Skipping..."
+else
+    python3 -m venv venv
+    echo "✓ Virtual environment created"
+fi
+echo ""
 
 # Activate virtual environment
-echo "🔧 Activating virtual environment..."
+echo "Activating virtual environment..."
 source venv/bin/activate
-
-# Upgrade pip
-echo "⬆️ Upgrading pip..."
-pip install --upgrade pip
+echo "✓ Virtual environment activated"
+echo ""
 
 # Install dependencies
-echo "📚 Installing dependencies..."
-pip install -r requirements.txt
+echo "Installing dependencies..."
+pip install --upgrade pip
+pip install -r blog_agents_requirements.txt
+echo "✓ Dependencies installed"
+echo ""
 
-# Create .env file from example
-if [ ! -f .env ]; then
-    echo "📝 Creating .env file from template..."
-    cp env.example .env
-    echo "⚠️  Please edit .env file with your API keys!"
+# Create necessary directories
+echo "Creating directories..."
+mkdir -p outputs
+mkdir -p references
+echo "✓ Directories created"
+echo ""
+
+# Setup environment file
+if [ -f ".env" ]; then
+    echo ".env file already exists. Skipping..."
 else
-    echo "✅ .env file already exists"
+    echo "Creating .env file from template..."
+    cp .env.example .env
+    echo "✓ .env file created"
+    echo ""
+    echo "IMPORTANT: Please edit .env and add your API keys:"
+    echo "  - ANTHROPIC_API_KEY (required)"
+    echo "  - GOOGLE_SEARCH_API_KEY (optional)"
+    echo "  - GOOGLE_SEARCH_ENGINE_ID (optional)"
+    echo "  - BING_SEARCH_API_KEY (optional)"
 fi
+echo ""
 
-# Create data directory
-echo "📁 Creating data directory..."
-mkdir -p data
+# Test installation
+echo "Testing installation..."
+python3 -c "import blog_agents; print('✓ Blog Agents package imported successfully')"
+echo ""
 
-# Create logs directory
-echo "📁 Creating logs directory..."
-mkdir -p logs
-
-# Make CLI executable
-echo "🔧 Making CLI executable..."
-chmod +x news_crawler/cli/main.py
-
+# Display next steps
+echo "================================"
+echo "Setup Complete!"
+echo "================================"
 echo ""
-echo "🎉 Setup completed successfully!"
+echo "Next steps:"
+echo "1. Edit .env and add your API keys"
+echo "2. (Optional) Customize config.yaml"
+echo "3. (Optional) Add reference content to references/reference.md"
 echo ""
-echo "📋 Next steps:"
-echo "1. Edit .env file with your API keys:"
-echo "   - ANTHROPIC_API_KEY=your_anthropic_api_key"
-echo "   - NOTION_API_KEY=your_notion_api_key"
+echo "Try it out:"
+echo "  python -m blog_agents.cli.blog_cli generate --keywords \"Python testing\""
 echo ""
-echo "2. Test the installation:"
-echo "   source venv/bin/activate"
-echo "   news-crawler test"
+echo "For more information:"
+echo "  - README.md for full documentation"
+echo "  - QUICKSTART.md for quick start guide"
+echo "  - examples/blog_generation_example.py for code examples"
 echo ""
-echo "3. Start crawling:"
-echo "   news-crawler crawl-pattern --base-url 'https://www.maeil-mail.kr' --start 1 --end 10"
-echo ""
-echo "Happy crawling! 🕷️"

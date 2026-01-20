@@ -1,42 +1,57 @@
+"""Setup script for Blog Agents package."""
+
 from setuptools import setup, find_packages
+from pathlib import Path
 
-with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+# Read README
+readme_file = Path(__file__).parent / "README.md"
+long_description = readme_file.read_text(encoding="utf-8") if readme_file.exists() else ""
 
-with open("requirements.txt", "r", encoding="utf-8") as fh:
-    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+# Read requirements
+requirements_file = Path(__file__).parent / "blog_agents_requirements.txt"
+requirements = []
+if requirements_file.exists():
+    requirements = [
+        line.strip()
+        for line in requirements_file.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
 
 setup(
-    name="news-crawler",
+    name="blog-agents",
     version="1.0.0",
-    author="Your Name",
-    author_email="your.email@example.com",
-    description="A comprehensive web crawler for dev blogs and YouTube video summarization",
+    description="Multi-Agent Blog Content Generation System",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/news-crawler",
-    packages=find_packages(),
+    author="Your Name",
+    author_email="your.email@example.com",
+    url="https://github.com/yourusername/blog-agents",
+    packages=find_packages(exclude=["tests", "tests.*", "examples", "examples.*"]),
+    install_requires=requirements,
+    python_requires=">=3.9",
+    entry_points={
+        "console_scripts": [
+            "blog-agents=blog_agents.cli.blog_cli:cli",
+        ],
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Text Processing :: Linguistic",
+        "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
     ],
-    python_requires=">=3.8",
-    install_requires=requirements,
-    entry_points={
-        "console_scripts": [
-            "news-crawler=news_crawler.cli:main",
-        ],
-    },
-    include_package_data=True,
-    package_data={
-        "news_crawler": ["config/*.yaml", "templates/*.html"],
+    keywords="blog ai agents claude nlp content-generation",
+    project_urls={
+        "Documentation": "https://github.com/yourusername/blog-agents#readme",
+        "Source": "https://github.com/yourusername/blog-agents",
+        "Tracker": "https://github.com/yourusername/blog-agents/issues",
     },
 )

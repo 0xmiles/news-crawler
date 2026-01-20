@@ -1,182 +1,136 @@
-# 🚀 Quick Start Guide
+# Quick Start Guide - Blog Agents
 
-## 1️⃣ 프로젝트 설정
+Get started with Blog Agents in 5 minutes.
 
-### 자동 설정 (권장)
+## Prerequisites
 
-```bash
-# 설정 스크립트 실행
-./setup.sh
-```
+- Python 3.9+
+- Anthropic API key
 
-### 수동 설정
+## Installation
 
 ```bash
-# 1. 가상환경 생성 및 활성화
-python3 -m venv venv
-source venv/bin/activate
+# 1. Install dependencies
+pip install -r blog_agents_requirements.txt
 
-# 2. 의존성 설치
-pip install -r requirements.txt
-
-# 3. 환경 변수 설정
-cp env.example .env
-# .env 파일을 편집하여 API 키 설정
+# 2. Setup environment
+cp .env.example .env
 ```
 
-## 2️⃣ API 키 설정
+## Configure API Keys
 
-`.env` 파일을 편집하여 다음 API 키들을 설정하세요:
+Edit `.env` file:
+
+```env
+# Required
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+
+# Optional (for web search)
+GOOGLE_SEARCH_API_KEY=your_key
+GOOGLE_SEARCH_ENGINE_ID=your_engine_id
+```
+
+## Generate Your First Blog
 
 ```bash
-# 필수 API 키
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-NOTION_API_KEY=your_notion_api_key_here
-
-# 선택적 API 키 (YouTube 크롤링용)
-YOUTUBE_API_KEY=your_youtube_api_key_here
+python -m blog_agents.cli.blog_cli generate --keywords "Python testing best practices"
 ```
 
-### API 키 획득 방법
+That's it! Your blog will be saved in `outputs/` directory.
 
-#### Anthropic API 키
+## What Happens?
 
-1. [Anthropic Console](https://console.anthropic.com/) 방문
-2. 계정 생성 및 로그인
-3. API 키 생성
+1. **Searches** for relevant articles (10 results)
+2. **Selects** top 3 articles
+3. **Analyzes** content and creates outline
+4. **Writes** blog post (~1500 words)
+5. **Applies** tone from `references/reference.md`
+6. **Saves** to `outputs/python-testing-best-practices-2026-01-20.md`
 
-#### Notion API 키
+## Customize Writing Style
 
-1. [Notion Developers](https://developers.notion.com/) 방문
-2. "New integration" 생성
-3. API 키 복사
-4. 노션 데이터베이스에 integration 추가
+1. Create or edit `references/reference.md`
+2. Add 2-3 sample blog posts in your preferred style
+3. Run generation - the system will learn and apply your tone!
 
-## 3️⃣ 테스트 실행
+## View Progress
 
 ```bash
-# 가상환경 활성화
-source venv/bin/activate
-
-# 연결 테스트
-news-crawler test
+# Verbose mode shows detailed progress
+python -m blog_agents.cli.blog_cli generate -k "Docker containers" -v
 ```
 
-## 4️⃣ 사용 예제
-
-### 패턴 기반 크롤링 (maeil-mail.kr)
+## CLI Commands
 
 ```bash
-# maeil-mail.kr 질문 1-10번 크롤링
-news-crawler crawl-pattern \
-  --base-url "https://www.maeil-mail.kr" \
-  --start 1 \
-  --end 10 \
-  --notion-db "your-notion-database-id"
+# Generate blog
+generate --keywords "your topic"
+
+# Search only
+search-only --keywords "your topic"
+
+# Analyze tone
+analyze-tone --file references/reference.md
+
+# List workflows
+list-workflows
+
+# Show help
+--help
 ```
 
-### 단일 URL 크롤링
-
-```bash
-# 단일 URL 크롤링
-news-crawler crawl --url "https://example.com" --notion-db "your-database-id"
-```
-
-### YouTube 비디오 요약
-
-```bash
-# YouTube 비디오 요약
-news-crawler summarize --url "https://youtube.com/watch?v=VIDEO_ID" --notion-db "your-database-id"
-```
-
-## 5️⃣ 대화형 실행
-
-```bash
-# 대화형 예제 실행
-./run_example.sh
-```
-
-## 6️⃣ Python 스크립트 사용
+## Python API
 
 ```python
 import asyncio
-from news_crawler.core.config import Config
-from news_crawler.core.crawler import Crawler
+from blog_agents.core.orchestrator import BlogOrchestrator
 
 async def main():
-    # 설정 로드
-    config = Config.from_env()
-    crawler = Crawler(config.dict())
-
-    # 패턴 크롤링
-    pattern_config = {
-        'patterns': [{
-            'type': 'numeric_range',
-            'start': 1,
-            'end': 10,
-            'template': 'https://www.maeil-mail.kr/question/{number}'
-        }]
-    }
-
-    contents = await crawler.crawl_pattern_urls(
-        "https://www.maeil-mail.kr",
-        pattern_config
-    )
-
-    # 노션 업로드
-    page_ids = await crawler.summarize_and_upload(
-        contents,
-        "your-notion-database-id"
-    )
-
-    print(f"업로드된 항목: {len(page_ids)}개")
+    orchestrator = BlogOrchestrator()
+    result = await orchestrator.generate_blog("Python asyncio")
+    print(f"Done! {result['blog_file']}")
 
 asyncio.run(main())
 ```
 
-## 🔧 문제 해결
+## Output Files
 
-### 일반적인 문제들
+After generation, you'll find:
 
-1. **API 키 오류**
+```
+outputs/
+├── search_results.json      # Search results
+├── blog_plan.json           # Blog outline
+├── your-topic-2026-01-20.md # Final blog post
+└── checkpoint_xxx.json      # Workflow checkpoint
+```
 
-   ```bash
-   # .env 파일 확인
-   cat .env
+## Next Steps
 
-   # 환경 변수 로드 확인
-   source .env
-   echo $ANTHROPIC_API_KEY
-   ```
+- Read `README.md` for detailed documentation
+- Check `examples/blog_generation_example.py` for advanced usage
+- Customize `config.yaml` for your needs
 
-2. **의존성 설치 오류**
+## Common Issues
 
-   ```bash
-   # 가상환경 재생성
-   rm -rf venv
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+**No search results?**
+- Make sure you have configured Google/Bing API keys
+- Or use a different search provider in `config.yaml`
 
-3. **권한 오류**
-   ```bash
-   # 실행 권한 부여
-   chmod +x setup.sh
-   chmod +x run_example.sh
-   ```
+**Tone not applied?**
+- Check `references/reference.md` exists
+- Add more content to the reference file (500+ words recommended)
 
-## 📚 추가 정보
+**Generation fails?**
+- Check `blog_agents.log` for detailed error messages
+- Verify API keys are correct
+- Try with `--verbose` flag
 
-- [전체 문서](README.md)
-- [설정 파일](config.yaml)
-- [예제 스크립트](examples/maeil_mail_crawler.py)
+## Getting Help
 
-## 🆘 도움이 필요하신가요?
+```bash
+python -m blog_agents.cli.blog_cli --help
+python -m blog_agents.cli.blog_cli generate --help
+```
 
-문제가 발생하면 다음을 확인해보세요:
-
-1. Python 3.8+ 설치 여부
-2. API 키가 올바르게 설정되었는지
-3. 인터넷 연결 상태
-4. 방화벽 설정
+Happy blogging! 🎉
