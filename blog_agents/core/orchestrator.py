@@ -8,6 +8,7 @@ from blog_agents.config.agent_config import Config, get_config
 from blog_agents.agents.post_searcher import PostSearcher
 from blog_agents.agents.blog_planner import BlogPlanner
 from blog_agents.agents.blog_writer import BlogWriter
+from blog_agents.agents.blog_reviewer import BlogReviewer
 from blog_agents.utils.file_manager import FileManager
 from blog_agents.core.communication import CheckpointData, AgentStatus
 
@@ -29,6 +30,7 @@ class BlogOrchestrator:
         self.post_searcher = PostSearcher(self.config)
         self.blog_planner = BlogPlanner(self.config)
         self.blog_writer = BlogWriter(self.config)
+        self.blog_reviewer = BlogReviewer(self.config)
 
         # File manager
         self.file_manager = FileManager(self.config.blog_agents.output_dir)
@@ -129,6 +131,46 @@ class BlogOrchestrator:
             else:
                 logger.info("✓ Writing already completed (resuming)")
 
+            # Step 4: Review blog post
+            if "review" not in self.completed_steps:
+                logger.info("Step 4: Reviewing blog post")
+                self.current_step = "review"
+                await self._save_checkpoint()
+
+                # Load written blog from write_result or search_data
+                search_data = await self.file_manager.read_json("search_results.json")
+                if not search_data:
+                    raise Exception("Search results not found")
+
+                # Get the most recent write result
+                if "write" in self.completed_steps:
+                    # Load blog plan to get title and sources
+                    plan_data = await self.file_manager.read_json("blog_plan.json")
+                    if not plan_data:
+                        raise Exception("Blog plan not found")
+
+                    # Read the written blog file
+                    blog_filename = write_result.data.get("filename")
+                    blog_content = await self.file_manager.read_text(blog_filename)
+
+                    review_input = {
+                        "title": plan_data.get("title", ""),
+                        "content": blog_content,
+                        "sources": plan_data.get("sources", []),
+                        "filename": blog_filename
+                    }
+
+                    review_result = await self.blog_reviewer.run(review_input)
+
+                    if review_result.status != AgentStatus.COMPLETED:
+                        raise Exception(f"BlogReviewer failed: {review_result.error}")
+
+                    self.completed_steps.append("review")
+                    await self._save_checkpoint()
+                    logger.info("✓ Review completed")
+            else:
+                logger.info("✓ Review already completed (resuming)")
+
             # Mark workflow as complete
             self.current_step = "completed"
             await self._save_checkpoint()
@@ -139,6 +181,7 @@ class BlogOrchestrator:
                 "status": "completed",
                 "search_results": await self.file_manager.read_json("search_results.json"),
                 "blog_plan": await self.file_manager.read_json("blog_plan.json"),
+                "review_report": await self.file_manager.read_json("review_report.json"),
                 "blog_file": write_result.data.get("filename"),
                 "word_count": write_result.data.get("word_count"),
                 "sections_count": write_result.data.get("sections_count"),
@@ -162,6 +205,7 @@ class BlogOrchestrator:
             completed_steps=self.completed_steps,
             search_results_file="search_results.json" if "search" in self.completed_steps else None,
             blog_plan_file="blog_plan.json" if "plan" in self.completed_steps else None,
+            review_report_file="review_report.json" if "review" in self.completed_steps else None,
             metadata={
                 "last_updated": datetime.now().isoformat()
             }
@@ -270,6 +314,6 @@ class BlogOrchestrator:
             "workflow_id": self.workflow_id,
             "current_step": self.current_step,
             "completed_steps": self.completed_steps,
-            "total_steps": 3,
-            "progress_percentage": (len(self.completed_steps) / 3) * 100
+            "total_steps": 4,
+            "progress_percentage": (len(self.completed_steps) / 4) * 100
         }

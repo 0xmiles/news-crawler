@@ -100,6 +100,7 @@ class CheckpointData(BaseModel):
     search_results_file: Optional[str] = None
     blog_plan_file: Optional[str] = None
     blog_content_file: Optional[str] = None
+    review_report_file: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.now)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
@@ -112,6 +113,7 @@ class CheckpointData(BaseModel):
             "search_results_file": self.search_results_file,
             "blog_plan_file": self.blog_plan_file,
             "blog_content_file": self.blog_content_file,
+            "review_report_file": self.review_report_file,
             "timestamp": self.timestamp.isoformat(),
             "metadata": self.metadata
         }

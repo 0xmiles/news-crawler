@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Literal, Optional
 import yaml
 from pydantic import BaseModel, Field
-from pydantic_settings import BaseSettings
 
 
 class AIConfig(BaseModel):
@@ -17,11 +16,16 @@ class AIConfig(BaseModel):
     temperature: float = 0.7
 
 
-class SearchConfig(BaseModel):
-    """Search provider configuration."""
-    provider: Literal["google", "bing"] = "google"
+class ClaudeConfig(BaseModel):
+    """Claude API configuration."""
     api_key: str
-    search_engine_id: Optional[str] = None  # For Google
+    model: str = "claude-sonnet-4-5"
+    max_tokens: int = 4000
+    temperature: float = 0.7
+
+
+class SearchConfig(BaseModel):
+    """Search configuration for Claude web_search."""
     max_results: int = 10
 
 
@@ -46,6 +50,14 @@ class BlogWriterConfig(BaseModel):
     apply_tone_analysis: bool = True
 
 
+class BlogReviewerConfig(BaseModel):
+    """BlogReviewer agent configuration."""
+    enabled: bool = True
+    check_typos: bool = True
+    check_reliability: bool = True
+    use_adaptive_learning: bool = True
+
+
 class BlogAgentsConfig(BaseModel):
     """Blog agents system configuration."""
     max_search_results: int = 3
@@ -58,6 +70,7 @@ class BlogAgentsConfig(BaseModel):
     post_searcher: PostSearcherConfig = Field(default_factory=PostSearcherConfig)
     blog_planner: BlogPlannerConfig = Field(default_factory=BlogPlannerConfig)
     blog_writer: BlogWriterConfig = Field(default_factory=BlogWriterConfig)
+    blog_reviewer: BlogReviewerConfig = Field(default_factory=BlogReviewerConfig)
 
 
 class Config(BaseModel):
@@ -65,6 +78,16 @@ class Config(BaseModel):
     ai: AIConfig
     search: SearchConfig
     blog_agents: BlogAgentsConfig = Field(default_factory=BlogAgentsConfig)
+
+    @property
+    def claude(self) -> ClaudeConfig:
+        """Get Claude configuration from AI config."""
+        return ClaudeConfig(
+            api_key=self.ai.api_key,
+            model=self.ai.model,
+            max_tokens=self.ai.max_tokens,
+            temperature=self.ai.temperature
+        )
 
     @property
     def output_path(self) -> Path:

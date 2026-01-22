@@ -1,17 +1,21 @@
-# Blog Agents - 멀티 에이전트 블로그 콘텐츠 생성 시스템
+# Blog Agents - AI 블로그 콘텐츠 생성 시스템
 
-키워드로부터 자동으로 고품질 블로그 콘텐츠를 생성하는 Python 기반 AI Agent 시스템입니다. 3개의 전문화된 에이전트가 협력하여 작동합니다.
+키워드로부터 자동으로 고품질 블로그 콘텐츠를 생성하는 Python 기반 멀티 에이전트 시스템입니다.
 
 ## 주요 기능
 
-- **멀티 에이전트 아키텍처**: 3개의 전문화된 에이전트가 협력
-  - **PostSearcher**: 웹에서 관련 게시글을 검색하고 순위 매김
+- **멀티 에이전트 아키텍처**: 4개의 전문화된 에이전트가 협력
+  - **PostSearcher**: Claude의 web_search로 관련 게시글 검색 및 순위 매김
   - **BlogPlanner**: 게시글을 분석하고 구조화된 개요 작성
   - **BlogWriter**: 커스터마이징 가능한 톤으로 블로그 포스트 생성
+  - **BlogReviewer**: 오탈자 검사, 말투 개선, 신뢰도 검증, 지식 학습
+
+- **Claude 웹 검색**: Anthropic API의 `web_search_20250305` 도구 사용
+  - 외부 검색 API 불필요
+  - 고품질 AI 기반 검색 결과
+  - 자동 관련성 필터링 및 순위
 
 - **톤 학습**: 참조 문서에서 글쓰기 스타일을 학습하고 일관되게 적용
-
-- **웹 검색 통합**: Google Custom Search와 Bing Web Search API 모두 지원
 
 - **체크포인트 시스템**: 중단된 작업을 재개할 수 있음
 
@@ -20,23 +24,23 @@
 ## 아키텍처
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                  Orchestrator                        │
-│            (워크플로우 조정)                          │
-└──────────────┬──────────────┬──────────────┬────────┘
-               │              │              │
-       ┌───────▼──────┐ ┌─────▼──────┐ ┌────▼─────────┐
-       │ PostSearcher │ │ BlogPlanner│ │ BlogWriter   │
-       │              │ │            │ │              │
-       │ • 웹 검색    │ │ • 분석     │ │ • 작성       │
-       │ • 추출       │ │ • 개요     │ │ • 톤 적용    │
-       │ • 순위 매김  │ │ • 계획     │ │ • 다듬기     │
-       └──────────────┘ └────────────┘ └──────────────┘
-                                              │
-                                       ┌──────▼─────────┐
-                                       │  ToneLearner   │
-                                       │    (스킬)      │
-                                       └────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                        Orchestrator                                │
+│                    (워크플로우 조정)                                │
+└──────────┬──────────────┬──────────────┬──────────────┬──────────┘
+           │              │              │              │
+   ┌───────▼──────┐ ┌─────▼──────┐ ┌────▼─────────┐ ┌──▼────────────┐
+   │ PostSearcher │ │ BlogPlanner│ │ BlogWriter   │ │ BlogReviewer  │
+   │              │ │            │ │              │ │               │
+   │ • 웹 검색    │ │ • 분석     │ │ • 작성       │ │ • 오탈자 검사 │
+   │   (Claude)   │ │ • 개요     │ │ • 톤 적용    │ │ • 말투 개선   │
+   │ • 순위 매김  │ │ • 계획     │ │ • 다듬기     │ │ • 신뢰도 검증 │
+   └──────────────┘ └────────────┘ └──────────────┘ │ • 지식 학습   │
+                                          │          └───────────────┘
+                                   ┌──────▼─────────┐
+                                   │  ToneLearner   │
+                                   │    (스킬)      │
+                                   └────────────────┘
 ```
 
 ## 설치 방법
@@ -44,10 +48,7 @@
 ### 사전 요구사항
 
 - Python 3.9 이상
-- API 키:
-  - Anthropic API 키 (필수)
-  - Google Custom Search API 키 + Search Engine ID (선택)
-  - Bing Web Search API 키 (선택)
+- **Anthropic API 키** (Claude 및 웹 검색에 사용)
 
 ### 설정
 
@@ -71,7 +72,12 @@ pip install -r blog_agents_requirements.txt
 4. 환경 설정:
 ```bash
 cp .env.example .env
-# .env 파일을 편집하여 API 키 추가
+# .env 파일을 편집하여 Anthropic API 키 추가
+```
+
+`.env` 파일 예시:
+```env
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 ```
 
 5. 시스템 설정 (선택):
@@ -88,10 +94,11 @@ python -m blog_agents.cli.blog_cli generate --keywords "Python asyncio 모범 �
 ```
 
 실행 과정:
-1. 관련 게시글 검색
+1. Claude web_search로 관련 게시글 검색
 2. 분석 및 개요 작성
 3. 블로그 포스트 작성
-4. `outputs/` 디렉토리에 저장
+4. 오탈자 검사 및 말투 개선, 신뢰도 검증
+5. `outputs/` 디렉토리에 저장
 
 ### 글쓰기 톤 분석
 
@@ -110,26 +117,54 @@ python -m blog_agents.cli.blog_cli search-only --keywords "머신러닝"
 ### 환경 변수 (.env)
 
 ```env
+# 필수
 ANTHROPIC_API_KEY=your_api_key_here
-GOOGLE_SEARCH_API_KEY=your_google_key
-GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
 ```
 
 ### 시스템 설정 (config.yaml)
 
 ```yaml
+# AI 설정 (Claude API)
 ai:
+  provider: "anthropic"
   model: "claude-sonnet-4-5-20250929"
+  api_key: ${ANTHROPIC_API_KEY}  # 환경 변수에서 로드
+  max_tokens: 4000
   temperature: 0.7
 
+# 검색 설정 (Claude web_search 사용)
 search:
-  provider: "google"  # 또는 "bing"
-  max_results: 10
+  max_results: 10  # 검색 결과 최대 개수
 
+# 블로그 에이전트 설정
 blog_agents:
-  max_search_results: 3
-  target_blog_length: 1500
-  reference_file: "references/reference.md"
+  max_search_results: 3  # 사용할 상위 검색 결과 수
+  target_blog_length: 1500  # 목표 블로그 길이 (단어)
+  reference_file: "references/reference.md"  # 톤 학습용 참조 문서
+
+  # 에이전트별 설정
+  post_searcher:
+    max_articles: 3
+    min_content_length: 500
+
+  blog_planner:
+    min_sections: 3
+    max_sections: 7
+
+  blog_writer:
+    tone_weight: 0.7  # 톤 적용 강도 (0.0-1.0)
+
+  blog_reviewer:
+    enabled: true
+    check_typos: true  # 오탈자, 중복 표기 검사
+    check_reliability: true  # 신뢰도 검증
+    use_adaptive_learning: true  # adaptive-learner 스킬 사용
+
+# 출력 설정
+output:
+  directory: "outputs"
+  save_checkpoints: true
+  checkpoint_dir: "outputs/checkpoints"
 ```
 
 ## 사용 예시
@@ -166,43 +201,57 @@ python -m blog_agents.cli.blog_cli version
 ```
 news-crawler/
 ├── blog_agents/
-│   ├── agents/          # 3개의 전문화된 에이전트
+│   ├── agents/          # 4개의 전문화된 에이전트
 │   ├── config/          # 설정 관리
 │   ├── core/            # Orchestrator 및 base agent
-│   ├── search/          # 검색 제공자 통합
+│   ├── search/          # Claude web_search 통합
 │   ├── skills/          # ToneLearner 스킬
-│   ├── utils/           # 유틸리티 (retry, 파일 I/O, validators)
+│   ├── utils/           # 유틸리티
 │   └── cli/             # 명령줄 인터페이스
 ├── outputs/             # 생성된 블로그 및 체크포인트
-├── references/          # 톤 학습을 위한 참조 문서
+├── references/          # 톤 학습용 참조 문서
 ├── examples/            # 사용 예시
 ├── config.yaml          # 메인 설정 파일
+├── .env                 # API 키 (git에서 제외)
 └── blog_agents_requirements.txt
 ```
 
 ## 워크플로우
 
-1. **PostSearcher Agent**:
-   - Google/Bing API를 사용하여 웹 검색 실행
-   - 상위 결과에서 콘텐츠 추출
-   - Claude를 사용하여 게시글 관련성 순위 매김
-   - 상위 2-3개 게시글 선택
-   - `outputs/search_results.json`에 저장
+### 1. PostSearcher Agent (Claude Web Search)
 
-2. **BlogPlanner Agent**:
-   - 선택된 게시글 분석
-   - 주제, 갭, 핵심 개념 식별
-   - 구조화된 개요 생성 (3-7개 섹션)
-   - 게시글에서 핵심 포인트 추출
-   - `outputs/blog_plan.json`에 저장
+- Claude의 `web_search_20250305` 도구를 사용하여 웹 검색 실행
+- 고품질 검색 결과 자동 필터링
+- 상위 결과에서 콘텐츠 추출
+- Claude를 사용하여 게시글 관련성 순위 매김
+- 상위 2-3개 게시글 선택
+- `outputs/search_results.json`에 저장
 
-3. **BlogWriter Agent**:
-   - 참조 문서에서 톤 프로필 로드
-   - 흥미로운 훅으로 서론 작성
-   - 개요를 기반으로 각 섹션 작성
-   - 행동 유도 문구가 있는 결론 작성
-   - 톤 일관성을 위해 검토 및 다듬기
-   - `outputs/{제목}-{날짜}.md`에 저장
+### 2. BlogPlanner Agent
+
+- 선택된 게시글 분석
+- 주제, 갭, 핵심 개념 식별
+- 구조화된 개요 생성 (3-7개 섹션)
+- 게시글에서 핵심 포인트 추출
+- `outputs/blog_plan.json`에 저장
+
+### 3. BlogWriter Agent
+
+- 참조 문서에서 톤 프로필 로드
+- 흥미로운 훅으로 서론 작성
+- 개요를 기반으로 각 섹션 작성
+- 행동 유도 문구가 있는 결론 작성
+- 톤 일관성을 위해 검토 및 다듬기
+- `outputs/{제목}-{날짜}.md`에 저장
+
+### 4. BlogReviewer Agent
+
+- 오탈자, 중복 표기 등 검사 및 수정
+- 말투를 인간친화적으로 개선 (~~하죠. 등 형식적 표현 제거)
+- adaptive-learner 스킬을 사용하여 글의 지식 학습
+- 출처와 비교하여 신뢰도 검증
+- 리뷰 보고서 및 수정된 블로그 저장
+- `outputs/review_report.json`에 리뷰 결과 저장
 
 ## 참조 문서
 
@@ -257,16 +306,27 @@ write_result = await orchestrator.write_only()
 ## 문제 해결
 
 ### API 키 오류
-- `.env` 파일이 존재하고 유효한 API 키가 포함되어 있는지 확인
+- `.env` 파일이 존재하고 유효한 Anthropic API 키가 포함되어 있는지 확인
 - 환경 변수가 로드되는지 확인
 
-### 검색 오류
-- Google Custom Search Engine이 구성되어 있는지 확인
-- API 할당량 및 속도 제한 확인
+### 웹 검색 오류
+- Anthropic API 키가 유효한지 확인
+- Claude API 사용량 제한 확인
+- `claude-sonnet-4-5` 모델에 접근 권한이 있는지 확인
 
 ### 톤 분석 실패
 - `references/reference.md`가 존재하는지 확인
 - 파일에 충분한 콘텐츠가 포함되어 있는지 확인 (최소 500단어 권장)
+
+## 장점
+
+### Claude Web Search 사용의 이점
+
+1. **통합성**: 하나의 API 키(Anthropic)만 필요
+2. **품질**: AI가 관련성 높은 결과를 자동 선택
+3. **간편성**: 추가 검색 API 설정 불필요
+4. **비용**: 별도의 검색 API 비용 없음
+5. **안정성**: Anthropic의 안정적인 인프라 활용
 
 ## 기여하기
 

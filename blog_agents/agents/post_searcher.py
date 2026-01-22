@@ -1,4 +1,4 @@
-"""PostSearcher agent for finding relevant articles."""
+"""PostSearcher agent for finding relevant articles using Claude's web_search."""
 
 import logging
 import json
@@ -7,8 +7,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 from blog_agents.core.base_agent import BaseAgent
 from blog_agents.config.agent_config import Config
-from blog_agents.search.google_search import GoogleSearchProvider
-from blog_agents.search.bing_search import BingSearchProvider
+from blog_agents.search.claude_search import ClaudeSearchProvider
 from blog_agents.utils.file_manager import FileManager
 from blog_agents.core.communication import SearchResultsMessage
 
@@ -26,20 +25,12 @@ class PostSearcher(BaseAgent):
         """
         super().__init__(config, "PostSearcher")
 
-        # Initialize search provider
-        if config.search.provider == "google":
-            self.search_provider = GoogleSearchProvider(
-                api_key=config.search.api_key,
-                search_engine_id=config.search.search_engine_id,
-                max_results=config.search.max_results
-            )
-        elif config.search.provider == "bing":
-            self.search_provider = BingSearchProvider(
-                api_key=config.search.api_key,
-                max_results=config.search.max_results
-            )
-        else:
-            raise ValueError(f"Unsupported search provider: {config.search.provider}")
+        # Initialize search provider - using Claude's web_search tool
+        self.search_provider = ClaudeSearchProvider(
+            claude_api_key=config.claude.api_key,
+            max_results=config.search.max_results
+        )
+        logger.info("Using Claude web search (Anthropic API web_search_20250305 tool)")
 
         self.file_manager = FileManager(config.blog_agents.output_dir)
         self.max_articles = config.blog_agents.post_searcher.max_articles

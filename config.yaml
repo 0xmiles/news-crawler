@@ -6,10 +6,7 @@ ai:
   temperature: 0.7
 
 search:
-  provider: "google"  # or "bing"
-  api_key: "${GOOGLE_SEARCH_API_KEY}"
-  search_engine_id: "${GOOGLE_SEARCH_ENGINE_ID}"
-  max_results: 10
+  max_results: 10  # Maximum number of search results from Claude web_search
 
 blog_agents:
   max_search_results: 3
@@ -34,3 +31,9 @@ blog_agents:
     enabled: true
     section_word_target: 300
     apply_tone_analysis: true
+
+  blog_reviewer:
+    enabled: true
+    check_typos: true  # Check for typos, duplications, and grammar
+    check_reliability: true  # Verify reliability and accuracy
+    use_adaptive_learning: true  # Use adaptive-learner skill to acquire knowledge
