@@ -1,22 +1,13 @@
 # Core Dependencies
-requests>=2.31.0
-aiohttp>=3.9.0
-aiofiles>=23.2.0
-beautifulsoup4>=4.12.0
-lxml>=4.9.0
 anthropic>=0.7.0
 pydantic>=2.5.0
-pydantic-settings>=2.0.0
 click>=8.1.0
 python-dotenv>=1.0.0
 pyyaml>=6.0.1
 rich>=13.7.0
 
-# Search - Using Claude's built-in web_search tool (no additional dependencies)
+# Async I/O
+aiofiles>=23.2.0
 
 # Utilities
 tenacity>=8.2.3
-jsonschema>=4.19.0
-
-# Optional - for enhanced text processing
-markdown>=3.5.0

@@ -177,12 +177,11 @@ cp .env.example .env
 | 라이브러리 | 용도 |
 |----------|------|
 | `anthropic` | Claude API 통신 (웹 검색 및 콘텐츠 생성) |
-| `aiohttp`, `aiofiles` | 비동기 HTTP 요청 및 파일 처리 |
-| `beautifulsoup4`, `lxml` | HTML 파싱 및 콘텐츠 추출 |
 | `pydantic` | 데이터 검증 및 설정 관리 |
 | `click` | CLI 인터페이스 |
 | `rich` | 진행 상황 표시 및 터미널 UI |
-| `tenacity` | 재시도 로직 |
+| `aiofiles` | 비동기 파일 I/O |
+| `tenacity` | 재시도 로직 (API 호출 실패 시) |
 | `python-dotenv` | 환경 변수 관리 |
 | `pyyaml` | YAML 설정 파일 파싱 |
 
