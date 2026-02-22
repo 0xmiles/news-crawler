@@ -8,6 +8,7 @@ import logging
 import json
 from typing import List, Dict, Any
 import anthropic
+from anthropic import AsyncAnthropic
 from blog_agents.search.base_search import BaseSearchProvider, SearchResult
 from blog_agents.utils.retry import async_retry
 
@@ -41,7 +42,7 @@ class ClaudeSearchProvider(BaseSearchProvider):
         if not claude_api_key:
             raise ValueError("Claude API key is required")
 
-        self.client = anthropic.Anthropic(api_key=claude_api_key)
+        self.client = AsyncAnthropic(api_key=claude_api_key)
         logger.info("Initialized ClaudeSearchProvider (using Anthropic web_search tool)")
 
     @async_retry(max_attempts=3)
@@ -85,7 +86,7 @@ Format your response as a JSON array like this:
 ]"""
 
             # Call Claude with web_search tool
-            response = self.client.messages.create(
+            response = await self.client.messages.create(
                 model="claude-sonnet-4-5",
                 max_tokens=4096,
                 messages=[
@@ -124,7 +125,7 @@ Format your response as a JSON array like this:
             logger.error(f"Claude web search failed: {e}")
             raise
 
-    def _parse_claude_response(self, response: anthropic.types.Message, query: str) -> List[Dict[str, Any]]:
+    def _parse_claude_response(self, response: anthropic.types.AsyncMessage, query: str) -> List[Dict[str, Any]]:
         """Parse Claude's response to extract search results.
 
         Args:

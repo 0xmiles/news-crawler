@@ -1,5 +1,6 @@
 """BlogWriter agent for writing blog posts with tone application."""
 
+import asyncio
 import logging
 from typing import Dict, Any, List
 from datetime import datetime
@@ -60,24 +61,32 @@ class BlogWriter(BaseAgent):
                 logger.warning(f"Tone analysis failed: {e}. Writing without tone application.")
                 self.apply_tone = False
 
-        # Step 2: Write introduction
-        introduction = await self._write_introduction(title, sections, tone_profile)
-        logger.info("Introduction written")
+        # Steps 2-4: Write introduction, all sections, and conclusion concurrently.
+        # Each part is independent of the others, so we can run them in parallel.
+        # Semaphore(3) caps simultaneous Claude API calls to stay within rate limits.
+        semaphore = asyncio.Semaphore(3)
 
-        # Step 3: Write each section
-        section_contents = []
-        for idx, section in enumerate(sections):
-            logger.info(f"Writing section {idx + 1}/{len(sections)}: {section.get('heading', '')}")
-            content = await self._write_section(
-                section=section,
-                key_points=key_points,
-                tone_profile=tone_profile
-            )
-            section_contents.append(content)
+        async def write_with_limit(coro):
+            async with semaphore:
+                return await coro
 
-        # Step 4: Write conclusion
-        conclusion = await self._write_conclusion(title, sections, tone_profile)
-        logger.info("Conclusion written")
+        logger.info(f"Writing introduction, {len(sections)} sections, and conclusion concurrently")
+
+        tasks = [
+            write_with_limit(self._write_introduction(title, sections, tone_profile)),
+            *[
+                write_with_limit(self._write_section(section=s, key_points=key_points, tone_profile=tone_profile))
+                for s in sections
+            ],
+            write_with_limit(self._write_conclusion(title, sections, tone_profile)),
+        ]
+
+        results = await asyncio.gather(*tasks)
+        introduction = results[0]
+        section_contents = list(results[1:-1])
+        conclusion = results[-1]
+
+        logger.info("Introduction, sections, and conclusion written")
 
         # Step 5: Combine all parts
         full_content = self._assemble_blog(

@@ -1,5 +1,6 @@
 """PostSearcher agent for finding relevant articles using Claude's web_search."""
 
+import asyncio
 import logging
 import json
 from typing import Dict, Any, List
@@ -85,7 +86,10 @@ class PostSearcher(BaseAgent):
         return output_data
 
     async def _extract_content(self, search_results: List[Any]) -> List[Dict[str, Any]]:
-        """Extract content from search result URLs.
+        """Extract content from search result URLs concurrently.
+
+        Uses asyncio.gather with a semaphore to fetch all URLs in parallel
+        while limiting simultaneous connections to avoid overwhelming servers.
 
         Args:
             search_results: List of search results
@@ -93,62 +97,63 @@ class PostSearcher(BaseAgent):
         Returns:
             List of articles with extracted content
         """
-        articles = []
+        semaphore = asyncio.Semaphore(5)
 
-        for result in search_results:
-            try:
-                content = await self._fetch_url_content(result.url)
+        async def fetch_with_limit(result: Any) -> Dict[str, Any] | None:
+            async with semaphore:
+                try:
+                    content = await self._fetch_url_content(result.url)
+                    if len(content) < self.min_content_length:
+                        logger.debug(f"Skipping {result.url} - content too short")
+                        return None
+                    return {
+                        "title": result.title,
+                        "url": result.url,
+                        "snippet": result.snippet,
+                        "content": content,
+                        "source": result.source
+                    }
+                except Exception as e:
+                    logger.warning(f"Failed to extract content from {result.url}: {e}")
+                    return None
 
-                # Filter by minimum content length
-                if len(content) < self.min_content_length:
-                    logger.debug(f"Skipping {result.url} - content too short")
-                    continue
+        raw_results = await asyncio.gather(
+            *[fetch_with_limit(r) for r in search_results],
+            return_exceptions=False,
+        )
 
-                articles.append({
-                    "title": result.title,
-                    "url": result.url,
-                    "snippet": result.snippet,
-                    "content": content,
-                    "source": result.source
-                })
+        return [article for article in raw_results if article is not None]
 
-            except Exception as e:
-                logger.warning(f"Failed to extract content from {result.url}: {e}")
-                continue
-
-        return articles
-
-    async def _fetch_url_content(self, url: str) -> str:
+    async def _fetch_url_content(self, url: str, session: aiohttp.ClientSession | None = None) -> str:
         """Fetch and parse content from URL.
 
         Args:
             url: URL to fetch
+            session: Optional shared aiohttp session. Creates a one-off session if not provided.
 
         Returns:
             Extracted text content
         """
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
+        async def _do_fetch(s: aiohttp.ClientSession) -> str:
+            async with s.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
                 if response.status != 200:
                     raise Exception(f"HTTP {response.status}")
 
                 html = await response.text()
 
-                # Parse with BeautifulSoup
                 soup = BeautifulSoup(html, 'lxml')
+                for tag in soup(["script", "style", "nav", "footer", "header"]):
+                    tag.decompose()
 
-                # Remove script and style elements
-                for script in soup(["script", "style", "nav", "footer", "header"]):
-                    script.decompose()
-
-                # Get text
                 text = soup.get_text(separator='\n', strip=True)
-
-                # Clean up
                 lines = [line.strip() for line in text.split('\n') if line.strip()]
-                content = '\n'.join(lines)
+                return '\n'.join(lines)
 
-                return content
+        if session is not None:
+            return await _do_fetch(session)
+
+        async with aiohttp.ClientSession() as new_session:
+            return await _do_fetch(new_session)
 
     async def _rank_articles(self, keywords: str, articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Rank articles by relevance using Claude.
