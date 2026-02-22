@@ -57,7 +57,8 @@ class BaseAgent(ABC):
         system_prompt: str,
         user_message: str,
         temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None
+        max_tokens: Optional[int] = None,
+        cache_system: bool = False,
     ) -> str:
         """Call Claude API with retry logic.
 
@@ -66,6 +67,9 @@ class BaseAgent(ABC):
             user_message: User message
             temperature: Temperature override
             max_tokens: Max tokens override
+            cache_system: When True, marks the system prompt block with
+                cache_control so Claude can reuse it across calls within
+                the 5-minute prompt-cache window (reduces cost and latency).
 
         Returns:
             Claude's response text
@@ -73,19 +77,25 @@ class BaseAgent(ABC):
         Raises:
             RetryableError: If API call fails
         """
+        system: Any = (
+            [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}]
+            if cache_system
+            else system_prompt
+        )
+
         try:
             response = await self.client.messages.create(
                 model=self.model,
                 max_tokens=max_tokens or self.max_tokens,
                 temperature=temperature if temperature is not None else self.temperature,
-                system=system_prompt,
+                system=system,
                 messages=[
                     {"role": "user", "content": user_message}
                 ]
             )
 
-            # Extract text from response
             if response.content and len(response.content) > 0:
+                self._log_cache_usage(response.usage)
                 return response.content[0].text
 
             raise RetryableError("Empty response from Claude API")
@@ -93,6 +103,24 @@ class BaseAgent(ABC):
         except Exception as e:
             logger.error(f"Claude API call failed: {e}")
             raise RetryableError(f"Claude API error: {e}")
+
+    @staticmethod
+    def _log_cache_usage(usage: Any) -> None:
+        """Log prompt cache statistics from an API response.
+
+        Args:
+            usage: Usage object returned by the Anthropic API.
+        """
+        created = getattr(usage, "cache_creation_input_tokens", 0) or 0
+        read = getattr(usage, "cache_read_input_tokens", 0) or 0
+        if created or read:
+            regular = getattr(usage, "input_tokens", 0) or 0
+            logger.debug(
+                "Prompt cache – write: %d tok, read: %d tok, uncached: %d tok",
+                created,
+                read,
+                regular,
+            )
 
     async def create_message(
         self,

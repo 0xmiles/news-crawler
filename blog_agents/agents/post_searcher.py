@@ -195,11 +195,11 @@ Articles:
 Rank these articles by relevance. Respond with only the JSON array of indices."""
 
         try:
-            # Call Claude for ranking
             response = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.3
+                temperature=0.3,
+                cache_system=True,
             )
 
             # Parse ranking

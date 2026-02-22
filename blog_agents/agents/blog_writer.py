@@ -166,7 +166,8 @@ Write an engaging introduction."""
         response = await self.call_claude(
             system_prompt=system_prompt,
             user_message=user_message,
-            temperature=0.7
+            temperature=0.7,
+            cache_system=True,
         )
 
         return response.strip()
@@ -237,7 +238,8 @@ Write this section in markdown format."""
             system_prompt=system_prompt,
             user_message=user_message,
             temperature=0.7,
-            max_tokens=target_words * 2  # Allow some buffer
+            max_tokens=target_words * 2,
+            cache_system=True,
         )
 
         return response.strip()
@@ -293,7 +295,8 @@ Write a compelling conclusion."""
         response = await self.call_claude(
             system_prompt=system_prompt,
             user_message=user_message,
-            temperature=0.7
+            temperature=0.7,
+            cache_system=True,
         )
 
         return response.strip()

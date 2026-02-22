@@ -134,7 +134,8 @@ Provide the corrected content and list of corrections made."""
             response = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.3
+                temperature=0.3,
+                cache_system=True,
             )
 
             result = self._extract_json(response)
@@ -191,7 +192,8 @@ Provide the refined content and list of tone adjustments made."""
             response = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.5
+                temperature=0.5,
+                cache_system=True,
             )
 
             result = self._extract_json(response)
@@ -252,7 +254,8 @@ Provide reliability assessment."""
             response = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.3
+                temperature=0.3,
+                cache_system=True,
             )
 
             result = self._extract_json(response)
@@ -315,7 +318,8 @@ Extract and organize the knowledge."""
             response = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.4
+                temperature=0.4,
+                cache_system=True,
             )
 
             result = self._extract_json(response)

@@ -125,7 +125,8 @@ Analyze these articles. Respond with ONLY valid JSON, no markdown or additional 
             response = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.5
+                temperature=0.5,
+                cache_system=True,
             )
 
             logger.debug(f"Claude analysis response (first 300 chars): {response[:300]}")
@@ -207,7 +208,8 @@ Create a comprehensive blog post outline. Respond with ONLY valid JSON, no markd
             response = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.7
+                temperature=0.7,
+                cache_system=True,
             )
 
             logger.debug(f"Claude outline response (first 500 chars): {response[:500]}")
@@ -362,7 +364,8 @@ Extract key points relevant to the outline sections. Respond with ONLY a JSON ar
             response = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.5
+                temperature=0.5,
+                cache_system=True,
             )
 
             logger.debug(f"Claude key points response (first 300 chars): {response[:300]}")

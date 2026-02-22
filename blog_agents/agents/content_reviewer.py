@@ -174,7 +174,8 @@ Provide results in JSON format."""
             response_text = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.2
+                temperature=0.2,
+                cache_system=True,
             )
 
             # Parse JSON response
@@ -254,7 +255,8 @@ Return the improved content."""
             improved_content = await self.call_claude(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.3
+                temperature=0.3,
+                cache_system=True,
             )
 
             return improved_content.strip()
